@@ -44,8 +44,8 @@ export const addShow = async (req, res) => {
                 overview:movieApiData.overview,
                 poster_path:movieApiData.poster_path,
                 backdrop_path:movieApiData.backdrop_path,
-                genres:movieApiData.genres,
-                casts:movieApiData.casts,
+  genres: movieApiData.genres.map(g => g.name), // ✅ FIXED: get genre names
+  casts: movieCreditsData.cast.slice(0, 5).map(c => c.name), 
                 release_date:movieApiData.release_date,
                 original_language:movieApiData.original_language,
                 tagline:movieApiData.tagline || "",
@@ -88,6 +88,29 @@ export const getShows = async (req, res) => {
         res.json({success:true,shows:Array.from(uniqueShows)});
     }
     catch(error){
+        console.error(error);
+        res.json({success:false,message:error.message});
+    }
+}
+
+// API for SINGLE SHOW
+export const getShow = async (req, res) => {
+    try{
+        const {movieId} = req.params;
+
+        const shows = await Show.find({movie:movieId,showDateTime:{$gte:new Date()}})
+        const movie = await Movie.findById(movieId);
+        const dateTime = {};
+        shows.forEach((show)=>{
+            const date = show.showDateTime.toISOString().split('T')[0];
+            if(!dateTime[date]){
+                dateTime[date] = [];
+            }
+            dateTime[date].push({time: show.showDateTime,showId : show._id});
+        })
+        res.json({success:true,movie,dateTime});
+
+    }catch(error){
         console.error(error);
         res.json({success:false,message:error.message});
     }
